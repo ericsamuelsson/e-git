@@ -1,0 +1,86 @@
+---
+stages:
+- name: name
+  inputs:
+  - type: git
+    branch: master
+  triggers:
+  - type: commit
+  properties:
+  - name: NEW_TEXT_PROP
+    value: ${CF_APP}
+    type: text
+  - name: TEXT_AREA_PROP
+    value: |-
+      multi line
+      value
+    type: text_area
+  - name: SECURE_PROP
+    type: secure
+  - name: FILE_PROP
+    value: path
+    type: file
+  jobs:
+  - name: Build
+    type: builder
+    artifact_dir: output
+    build_type: ant
+    script: |-
+      #!/bin/bash
+      ant
+- name: Deploy CF
+  inputs:
+  - type: job
+    stage: name
+    job: Build
+  triggers:
+  - type: stage
+  jobs:
+  - name: Deploy
+    type: deployer
+    target:
+      url: ${CF_TARGET_URL}
+      organization: ${CF_ORGANIZATION}
+      space: ${CF_SPACE}
+      application: ${CF_APP}
+    script: |
+      #!/bin/bash
+      cf push "${CF_APP}"
+
+      # view logs
+      #cf logs "${CF_APP}" --recent
+- name: test connection
+  inputs:
+  - type: git
+    branch: master
+  triggers:
+  - type: stage
+  jobs:
+  - name: Build
+    type: builder
+    build_type: shell
+    script: |-
+      #!/bin/bash
+      # your script here
+      wget --no-check-certificate https://gaas.stage1.mybluemix.net/translate
+- name: Translate
+  inputs:
+  - type: git
+    branch: master
+  triggers:
+  - type: commit
+  properties:
+  - name: DEBUG
+    value: '1'
+    type: text
+  jobs:
+  - name: Build
+    type: builder
+    extension_id: ibm.devops.services.pipeline.globalization.builder
+    target:
+      url: https://api.stage1.ng.bluemix.net
+      organization: eric.samuelsson@se.ibm.com
+      space: dev
+    SUBMISSION_NAME: a_test_app_java_helloworld_scan_translate_beta3_notOsthanes
+    SETUP_SERVICE_SPACE: 'true'
+    INPUT_PATTERN: Messages_en.properties
