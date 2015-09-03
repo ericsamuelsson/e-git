@@ -8,9 +8,6 @@ sdf
 xxx
 xxx
 xxx
-xxx
-xxx
-XXX
 XXX
 xxx
 xxx
